@@ -6,8 +6,11 @@
 # see the Pycom Licence v1.0 document supplied with this file, or
 # available at https://www.pycom.io/opensource/licensing
 
+import gc
 import time
+import machine
 from machine import Timer
+# from struct import *
 import _thread
 
 try:
@@ -82,20 +85,23 @@ class MeshInterface:
                 self.mesh.process_messages()
 
             # if Single Leader for 3 mins should reset
-            # if self.mesh.mesh.state == self.mesh.mesh.STATE_LEADER and self.mesh.mesh.mesh.single():
-            #     if self.single_leader_ts == 0:
-            #         # first time Single Leader, record time
-            #         self.single_leader_ts = time.time()
-            #     print_debug(3, "Single Leader", self.mesh.mesh.state, self.mesh.mesh.mesh.single(),
-            #         time.time() - self.single_leader_ts)
+            if self.mesh.mesh.state == self.mesh.mesh.STATE_LEADER and self.mesh.mesh.mesh.single():
+                if self.single_leader_ts == 0:
+                    # first time Single Leader, record time
+                    self.single_leader_ts = time.time()
+                print("Single Leader", self.mesh.mesh.state, self.mesh.mesh.mesh.single(),
+                    time.time() - self.single_leader_ts)
 
-            #     if time.time() - self.single_leader_ts > 180:
-            #         print_debug(3, "Single Leader, just reset")
-            #         if self.sleep_function:
-            #             self.sleep_function(1)
-            # else:
-            #     # print_debug(3, "Not Single Leader", self.mesh.mesh.state, self.mesh.mesh.mesh.single())
-            #     self.single_leader_ts = 0
+                if time.time() - self.single_leader_ts > 180:
+                    print("Single Leader, just reset")
+                    machine.reset()
+                    if self.sleep_function:
+                        self.sleep_function(1)
+                    else:
+                        machine.reset()
+            else:
+                # print("Not Single Leader", self.mesh.mesh.state, self.mesh.mesh.mesh.single())
+                self.single_leader_ts = 0
 
             self.lock.release()
 

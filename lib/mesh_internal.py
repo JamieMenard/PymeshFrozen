@@ -47,10 +47,20 @@ __version__ = '3'
 * initial version, in ble project
 """
 
+def current_time():
+    current_time = utime.localtime()
+    formatted_time = format_time(current_time)
+    return formatted_time
+
+def format_time(given_time):
+    format_time = ("[%d:%d %d/%d]"  % (given_time[3], given_time[4], given_time[1], given_time[2]))
+    return format_time
+
+
 
 class MeshInternal:
     """ Class for internal protocol inside Mesh network """
-
+    # MSG_ARRIVE_YET = False
 ################################################################################
     # Border router constants
 
@@ -526,59 +536,67 @@ class MeshInternal:
 
 
             elif type == self.PACK_MESSAGE_ACK:
-                print_debug(3, "PACK_MESSAGE_ACK received")
+                print("PACK_MESSAGE_ACK received")
                 # mark message as received
+                now_time = current_time()
+                try:
+                    f = open('/sd/www/ack_log.txt', 'a+')
+                    f.write('%s %s\n' % (now_time, rcv_data))
+                    f.close()
+                    print('Wrote msg to SD, ack_log.txt')
+                except:
+                    print("No SD card")
                 self.messages.rcv_ack(rcv_data)
 
             elif type == self.PACK_ROUTER_ASK_MACS:
-                print_debug(3, "PACK_ROUTER_ASK_MACS received")
+                print("PACK_ROUTER_ASK_MACS received")
                 payload = self.mesh.leader_data.get_macs_pack()
                 self.send_pack(self.PACK_LEADER_MACS, payload, rcv_ip)
 
             elif type == self.PACK_LEADER_MACS:
-                print_debug(3, "PACK_LEADER_MACS received")
+                print("PACK_LEADER_MACS received")
                 self.mesh.macs_set(rcv_data)
 
             elif type == self.PACK_ROUTER_ASK_CONNECTIONS:
-                print_debug(3, "PACK_ROUTER_ASK_CONNECTIONS received")
+                print("PACK_ROUTER_ASK_CONNECTIONS received")
                 payload = self.mesh.leader_data.get_connections_pack()
                 self.send_pack(self.PACK_LEADER_CONNECTIONS, payload, rcv_ip)
 
             elif type == self.PACK_LEADER_CONNECTIONS:
-                print_debug(3, "PACK_LEADER_CONNECTIONS received")
+                print("PACK_LEADER_CONNECTIONS received")
                 self.mesh.connections_set(rcv_data)
 
             elif type == self.PACK_ROUTER_ASK_MAC_DETAILS:
-                print_debug(3, "PACK_ROUTER_ASK_MAC_DETAILS received")
+                print("PACK_ROUTER_ASK_MAC_DETAILS received")
                 (mac_req, ) = unpack('!H', rcv_data)
-                print_debug(3, str(mac_req))
+                print(mac_req)
                 payload = self.mesh.leader_data.node_info_mac_pack(mac_req)
                 if len(payload) > 0:
                     self.send_pack(self.PACK_LEADER_MAC_DETAILS,
                                    payload, rcv_ip)
                 else:
-                    print_debug(3, "No info found about MAC %d"%mac_req)
+                    print("No info found about MAC %d"%mac_req)
 
             elif type == self.PACK_LEADER_MAC_DETAILS:
-                print_debug(3, "PACK_LEADER_MAC_DETAILS received")
+                print("PACK_LEADER_MAC_DETAILS received")
                 self.mesh.node_info_set(rcv_data)
 
             # elif type == self.PACK_FILE_SEND:
-            #     print_debug(3, "PACK_FILE_SEND received")
+            #     print("PACK_FILE_SEND received")
             #     payload = pack("!Q", self.MAC)
             #     self.send_pack(self.PACK_FILE_SEND_ACK, payload, rcv_ip)
             #     # rcv data contains '!QHH' as header
             #     chunk = len(rcv_data) -12
             #     self.file_size += chunk
-            #     print_debug(3, "size: %d, chunk %d" % (self.file_size, chunk))
+            #     print("size: %d, chunk %d" % (self.file_size, chunk))
             #     file_handler = "ab" # append, by default
             #     if chunk > self.file_packsize:
             #         # started receiving a new file
-            #         print_debug(3, "started receiving a new image")
+            #         print("started receiving a new image")
             #         file_handler = "wb" # write/create new file
             #         self.file_packsize = chunk
             #     elif chunk < self.file_packsize:
-            #         print_debug(3, "DONE receiving the image")
+            #         print("DONE receiving the image")
             #         # done receiving the file
             #         self.file_packsize = 0
             #         self.file_size = 0
